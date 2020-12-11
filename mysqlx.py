@@ -10,32 +10,46 @@ def pretty(d, indent=0):
       pretty(value, indent+1)
     else:
       print('\t' * (indent+1) + str(value))
+      
+def compareColumn(src, dst):
+  pass
+
+def getConn(dsn):
+  r = dsnparse.parse(dsn)
+  conn = pymysql.connect(
+    host=r.host,
+    user=r.username,
+    password=r.password,
+    db=r.paths[0],
+    port=r.port,
+    charset='utf8mb4',
+    cursorclass=pymysql.cursors.DictCursor)
+  return conn
+
+def getTable(conn, table):
+  with conn.cursor() as cursor:
+    sql = "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME=%s"
+    cursor.execute(sql, (table))
+    return cursor.fetchall()
 
 class App(object):
   """Main application."""
 
   def diff(self, source, dest):
-    r = dsnparse.parse(source)
-    connection = pymysql.connect(
-      host=r.host,
-      user=r.username,
-      password=r.password,
-      db=r.paths[0],
-      port=r.port,
-      charset='utf8mb4',
-      cursorclass=pymysql.cursors.DictCursor)
-    try:
-      with connection.cursor() as cursor:
-        # Select table
-        table = "notification"
-        sql = "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME=%s"
-        cursor.execute(sql, (table))
-        table = cursor.fetchall()
-        pretty(table[0])
-    finally:
-      connection.close()
+    """diff compare two schemas
+
+    Args:
+        source (string): a DSN of source MySQL
+        dest (string): a DSN of dest MySQL 
+    """    
+    srcConn = getConn(source)
+    dstConn = getConn(dest)
+    table1 = getTable(srcConn, "notification")
+    table2 = getTable(dstConn, "notification")
+    for col in table1:
+      pretty(col)
     print(source)
-    print(dest)
+    print(dest) 
 
 if __name__ == '__main__':
   fire.Fire(App)
