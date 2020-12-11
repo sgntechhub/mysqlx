@@ -2,18 +2,37 @@ import fire
 import dsnparse
 import pymysql.cursors
 
+
+def pretty(d, indent=0):
+  for key, value in d.items():
+    print('\t' * indent + str(key))
+    if isinstance(value, dict):
+      pretty(value, indent+1)
+    else:
+      print('\t' * (indent+1) + str(value))
+
 class App(object):
   """Main application."""
 
   def diff(self, source, dest):
     r = dsnparse.parse(source)
-    print(r.scheme)  # prom.interface.postgres.Interface
-    print(r.username)  # testuser
-    print(r.password)  # testpw
-    print(r.host)  # localhost
-    print(r.port)  # 1234
-    print(r.hostloc)  # localhost:1234
-    print(r.paths)  # ['testdb']
+    connection = pymysql.connect(host=r.host,
+                                 user=r.username,
+                                 password=r.password,
+                                 db=r.paths[0],
+                                 port=r.port,
+                                 charset='utf8mb4',
+                                 cursorclass=pymysql.cursors.DictCursor)
+    try:
+      with connection.cursor() as cursor:
+        # Select table
+        table = "notification"
+        sql = "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME=%s"
+        cursor.execute(sql, (table))
+        result = cursor.fetchall()
+        pretty(result[0])
+    finally:
+      connection.close()
     print(source)
     print(dest)
 
