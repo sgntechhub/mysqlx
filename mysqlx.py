@@ -1,6 +1,7 @@
 import fire
 import dsnparse
 import pymysql.cursors
+from app.table import Table
 
 
 def pretty(d, indent=0):
@@ -31,7 +32,6 @@ def getTable(conn, table):
     sql = "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME=%s"
     cursor.execute(sql, (table))
     return cursor.fetchall()
-
 class App(object):
   """Main application."""
 
@@ -39,15 +39,16 @@ class App(object):
     """diff compare two schemas
 
     Args:
-        source (string): a DSN of source MySQL
-        dest (string): a DSN of dest MySQL 
+      source (string): a DSN of source MySQL
+      dest (string): a DSN of dest MySQL 
     """    
     srcConn = getConn(source)
     dstConn = getConn(dest)
     table1 = getTable(srcConn, "notification")
     table2 = getTable(dstConn, "notification")
-    for col in table1:
-      pretty(col)
+    t1 = Table(table1)
+    for col1 in t1:
+      pretty(col1)
     print(source)
     print(dest) 
 
